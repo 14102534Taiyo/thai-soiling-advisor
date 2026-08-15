@@ -13,9 +13,11 @@ src/representative_year.py, and does not modify any of them.
 Framework-agnostic on purpose -- no `streamlit` import here.
 """
 
+import time
 from datetime import date, timedelta
 
 import pandas as pd
+import requests
 
 from src.air4thai_client import (
     MAX_CORRECTION_STATION_DISTANCE_DEG,
@@ -153,9 +155,32 @@ def get_realtime_rain_status(lat: float, lon: float):
         return None
 
 
-def run_pipeline(lat, lon, kwp, dc_ac_ratio, tilt, azimuth, cleaning_threshold_mm,
-                  price_per_kwh, cleaning_cost_per_kwp, horizon_days, system_efficiency=1.0,
-                  gamma_pdc=-0.0040):
+RATE_LIMIT_RETRY_DELAYS_S = (3, 8, 20)
+
+
+def run_pipeline(*args, **kwargs):
+    """Retries the whole pipeline on a 429 from an upstream API (seen in
+    practice from Render: its shared free-tier egress IPs collectively draw
+    enough traffic to Open-Meteo's unauthenticated API to get rate-limited,
+    even though this app's own request volume is tiny -- a local dev machine
+    with its own IP doesn't see this). A retry is safe here: the whole
+    pipeline is a pure read (weather/AQ fetch -> soiling/economics compute),
+    the one write (tmd_client's rain-correction log) is idempotent."""
+    last_error = None
+    for delay in (*RATE_LIMIT_RETRY_DELAYS_S, None):
+        try:
+            return _run_pipeline_once(*args, **kwargs)
+        except requests.exceptions.HTTPError as exc:
+            if exc.response is None or exc.response.status_code != 429 or delay is None:
+                raise
+            last_error = exc
+            time.sleep(delay)
+    raise last_error
+
+
+def _run_pipeline_once(lat, lon, kwp, dc_ac_ratio, tilt, azimuth, cleaning_threshold_mm,
+                        price_per_kwh, cleaning_cost_per_kwp, horizon_days, system_efficiency=1.0,
+                        gamma_pdc=-0.0040):
     today = date.today()
     weather_hourly, aq_hourly, weather_fcst_end, aq_fcst_end, horizon_end = fetch_pipeline_inputs(
         lat, lon, horizon_days
