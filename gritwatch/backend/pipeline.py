@@ -114,25 +114,43 @@ def fetch_pipeline_inputs(lat: float, lon: float, horizon_days: int):
 
 
 def get_pm_correction_factors(lat: float, lon: float):
-    reference_year = date.today().year - 1
-    return compute_monthly_pm_correction(lat, lon, reference_year)
+    # All three of these hit real-time/near-real-time Thai government APIs
+    # (Air4Thai, PCD, TMD) that are optional corrections layered on top of
+    # the CAMS/Open-Meteo forecast, never required for a result -- the rest
+    # of run_pipeline already treats a None return as "no correction
+    # available" (see the `if x is not None` checks below). Deployed away
+    # from Thailand (e.g. Render), these calls are more likely to time out
+    # or fail outright than on a machine with better routing to them; catch
+    # broadly and degrade to "unavailable" rather than failing the whole
+    # dashboard over an optional enhancement.
+    try:
+        reference_year = date.today().year - 1
+        return compute_monthly_pm_correction(lat, lon, reference_year)
+    except Exception:
+        return None
 
 
 def get_realtime_pm_today(lat: float, lon: float):
-    year_now = date.today().year
-    hist_codes = get_historical_station_codes(year_now - 1)
-    if not hist_codes:
+    try:
+        year_now = date.today().year
+        hist_codes = get_historical_station_codes(year_now - 1)
+        if not hist_codes:
+            return None
+        stations = get_realtime_stations()
+        nearest = find_nearest_station(lat, lon, stations, valid_codes=hist_codes)
+        distance_deg = ((nearest["lat"] - lat) ** 2 + (nearest["lon"] - lon) ** 2) ** 0.5
+        if distance_deg > MAX_CORRECTION_STATION_DISTANCE_DEG or nearest["pm2_5"] is None:
+            return None
+        return float(nearest["pm2_5"])
+    except Exception:
         return None
-    stations = get_realtime_stations()
-    nearest = find_nearest_station(lat, lon, stations, valid_codes=hist_codes)
-    distance_deg = ((nearest["lat"] - lat) ** 2 + (nearest["lon"] - lon) ** 2) ** 0.5
-    if distance_deg > MAX_CORRECTION_STATION_DISTANCE_DEG or nearest["pm2_5"] is None:
-        return None
-    return float(nearest["pm2_5"])
 
 
 def get_realtime_rain_status(lat: float, lon: float):
-    return get_realtime_rain_today(lat, lon)
+    try:
+        return get_realtime_rain_today(lat, lon)
+    except Exception:
+        return None
 
 
 def run_pipeline(lat, lon, kwp, dc_ac_ratio, tilt, azimuth, cleaning_threshold_mm,
