@@ -1,0 +1,160 @@
+/* GritWatch design tokens -- derived from the handoff doc's palette
+   (bg #f2f2f3, text #1d1f20, accent #5980a6) plus constructed neutral/accent
+   ramps, since the prototype's actual "Industry" design-system stylesheet
+   is a design-tool-internal asset this build can't fetch. Square corners,
+   no shadows, no border radius throughout, per the handoff's Frame notes. */
+
+:root {
+  --color-bg: #f2f2f3;
+  --color-text: #1d1f20;
+  --color-accent: #5980a6;
+
+  --color-neutral-100: #f8f8f7;
+  --color-neutral-200: #ebebe9;
+  --color-neutral-300: #dcdcda;
+  --color-neutral-400: #c3c3c0;
+  --color-neutral-500: #9d9d98;
+  --color-neutral-600: #78786f;
+  --color-neutral-700: #5a5a52;
+  --color-neutral-800: #3a3a34;
+  --color-neutral-900: #1d1f20;
+
+  --color-accent-100: #eef2f6;
+  --color-accent-200: #d7e0e8;
+  --color-accent-300: #b9c9d6;
+  --color-accent-400: #93aec2;
+  --color-accent-500: #7195b3;
+  --color-accent-600: #5980a6;
+  --color-accent-700: #46698c;
+  --color-accent-800: #345070;
+  --color-accent-900: #253a52;
+
+  --color-critical: #b03d2a;
+
+  --font-heading: "Barlow Condensed", "Noto Sans Thai", sans-serif;
+  --font-body: "Barlow", "Noto Sans Thai", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: "Noto Sans Thai", var(--font-body), sans-serif;
+}
+
+a { color: var(--color-accent-700); text-decoration: none; }
+a:hover { color: var(--color-accent-900); }
+input[type=range] { accent-color: var(--color-accent); }
+
+.input {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 7px;
+  border: 1px solid var(--color-neutral-400);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.card {
+  position: relative;
+  background: var(--color-bg);
+  border: 1px solid var(--color-neutral-300);
+}
+.card.blueprint .corner {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--color-neutral-500);
+  pointer-events: none;
+}
+.card.blueprint .corner.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.card.blueprint .corner.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.card.blueprint .corner.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.card.blueprint .corner.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+.card-kicker {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-neutral-700);
+}
+
+.btn {
+  font: inherit;
+  cursor: pointer;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.btn-ghost {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--color-neutral-400);
+}
+.btn-ghost.active {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+.btn-primary {
+  padding: 7px 14px;
+  font-size: 12px;
+  border: 1px solid var(--color-accent-700);
+  background: var(--color-accent-700);
+  color: #fff;
+}
+.btn-primary:hover { background: var(--color-accent-900); border-color: var(--color-accent-900); }
+.btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+.tag {
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tag-outline {
+  border: 1px solid var(--color-neutral-400);
+  color: var(--color-neutral-700);
+}
+.tag-warn {
+  border: 1px solid var(--color-critical);
+  color: var(--color-critical);
+}
+
+.table { border-collapse: collapse; }
+.table th, .table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--color-neutral-300);
+  text-align: left;
+  vertical-align: top;
+}
+.table th {
+  font-weight: 600;
+  color: var(--color-neutral-700);
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--color-neutral-400); }
+::-webkit-scrollbar-track { background: transparent; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-neutral-200) 25%, var(--color-neutral-300) 50%, var(--color-neutral-200) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-sheen 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-sheen {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

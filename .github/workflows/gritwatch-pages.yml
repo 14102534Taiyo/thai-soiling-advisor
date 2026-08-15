@@ -1,0 +1,36 @@
+name: Deploy GritWatch dashboard to GitHub Pages
+
+# Publishes only gritwatch/frontend/ (a static, no-build Vue app) to Pages.
+# Does not touch app.py, src/, or anything outside gritwatch/.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "gritwatch/frontend/**"
+      - ".github/workflows/gritwatch-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: gritwatch/frontend
+      - id: deployment
+        uses: actions/deploy-pages@v4

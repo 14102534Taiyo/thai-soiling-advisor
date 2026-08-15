@@ -1,0 +1,18 @@
+# Render Blueprint for the GritWatch dashboard backend (gritwatch/backend/).
+# Only touches deployment of that folder -- does not run or deploy app.py.
+#
+# To use: on Render, "New +" -> "Blueprint" -> pick this repo. Render reads
+# this file and creates the service below automatically. Or configure the
+# same settings by hand under "New +" -> "Web Service" if you'd rather not
+# use Blueprints.
+services:
+  - type: web
+    name: gritwatch-api
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: "pip install -r requirements.txt -r gritwatch/backend/requirements.txt"
+    startCommand: "uvicorn gritwatch.backend.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6

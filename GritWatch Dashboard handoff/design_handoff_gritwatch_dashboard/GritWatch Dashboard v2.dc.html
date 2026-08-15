@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-f4643004-30db-42b9-9f62-8c5010c05bd6/styles.css">
+<script src="_ds/industry-f4643004-30db-42b9-9f62-8c5010c05bd6/_ds_bundle.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background: var(--color-bg); font-family: "Noto Sans Thai", var(--font-body), sans-serif; }
+  a { color: var(--color-accent-700); text-decoration: none; }
+  a:hover { color: var(--color-accent-900); }
+  input[type=range] { accent-color: var(--color-accent); }
+</style>
+</helmet>
+
+<div style="height:940px; min-width:1280px; display:grid; grid-template-rows:auto 1fr; background:var(--color-bg); color:var(--color-text); font-family:'Noto Sans Thai', var(--font-body), sans-serif; overflow:hidden;">
+
+  <header style="display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:54px; border-bottom:1px solid var(--color-neutral-300); background:var(--color-bg);">
+    <div style="display:flex; align-items:baseline; gap:14px;">
+      <span style="font-family:var(--font-heading); font-weight:700; font-size:22px; letter-spacing:0.08em; text-transform:uppercase;">GritWatch</span>
+      <span style="font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--color-neutral-700);">Soiling Advisor</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px; font-size:13px; color:var(--color-neutral-700);">
+      <span>{{ siteLabel }}</span>
+      <span style="width:1px; height:16px; background:var(--color-neutral-300);"></span>
+      <span>ข้อมูลจริงถึง {{ dataThrough }}</span>
+      <span class="tag tag-outline" style="font-size:11px;">PROTOTYPE</span>
+    </div>
+  </header>
+
+  <div style="display:grid; grid-template-columns:312px 1fr; min-height:0;">
+
+    <aside style="border-right:1px solid var(--color-neutral-300); padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:18px;">
+      <div>
+        <div style="font-family:var(--font-heading); font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:var(--color-neutral-700); margin-bottom:8px;">ทำเลที่ตั้ง</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <label style="grid-column:1 / -1; font-size:12px; color:var(--color-neutral-700);">เลือกจังหวัด
+            <select class="input" value="{{ site }}" onChange="{{ set_site }}" style="width:100%; margin-top:4px;">
+              <option value="กรุงเทพมหานคร">กรุงเทพมหานคร</option>
+              <option value="เชียงใหม่">เชียงใหม่</option>
+              <option value="นครราชสีมา">นครราชสีมา</option>
+              <option value="ขอนแก่น">ขอนแก่น</option>
+              <option value="สงขลา">สงขลา</option>
+            </select>
+          </label>
+          <label style="font-size:12px; color:var(--color-neutral-700);">ละติจูด
+            <input class="input" type="number" step="0.0001" value="{{ lat }}" onChange="{{ set_lat }}" style="width:100%; margin-top:4px;">
+          </label>
+          <label style="font-size:12px; color:var(--color-neutral-700);">ลองจิจูด
+            <input class="input" type="number" step="0.0001" value="{{ lon }}" onChange="{{ set_lon }}" style="width:100%; margin-top:4px;">
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-heading); font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:var(--color-neutral-700); margin-bottom:8px;">สเปกระบบโซลาร์</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <label style="font-size:12px; color:var(--color-neutral-700);">ขนาดระบบ (kWp)
+            <input class="input" type="number" step="1" value="{{ kwp }}" onChange="{{ set_kwp }}" style="width:100%; margin-top:4px;">
+          </label>
+          <label style="font-size:12px; color:var(--color-neutral-700);">อัตราส่วน DC/AC
+            <input class="input" type="number" step="0.05" value="{{ dcAc }}" onChange="{{ set_dcAc }}" style="width:100%; margin-top:4px;">
+          </label>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+          <label style="font-size:12px; color:var(--color-neutral-700);">มุมเอียง <b style="color:var(--color-text);">{{ tilt }}°</b>
+            <input type="range" min="0" max="45" step="1" value="{{ tilt }}" onChange="{{ set_tilt }}" style="width:100%;">
+          </label>
+          <label style="font-size:12px; color:var(--color-neutral-700);">ทิศทางแผง <b style="color:var(--color-text);">{{ azimuth }}°</b>
+            <input type="range" min="0" max="359" step="1" value="{{ azimuth }}" onChange="{{ set_azimuth }}" style="width:100%;">
+          </label>
+          <label style="font-size:12px; color:var(--color-neutral-700);">ประสิทธิภาพระบบ <b style="color:var(--color-text);">{{ sysEff }}%</b>
+            <input type="range" min="70" max="100" step="1" value="{{ sysEff }}" onChange="{{ set_sysEff }}" style="width:100%;">
+          </label>
+          <label style="font-size:12px; color:var(--color-neutral-700);">สัมประสิทธิ์อุณหภูมิ <b style="color:var(--color-text);">{{ gammaLabel }}</b>
+            <input type="range" min="25" max="50" step="1" value="{{ gamma }}" onChange="{{ set_gamma }}" style="width:100%;">
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-heading); font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:var(--color-neutral-700); margin-bottom:8px;">เงื่อนไขล้างจากฝน</div>
+        <label style="font-size:12px; color:var(--color-neutral-700);">เกณฑ์ฝน <b style="color:var(--color-text);">{{ rainLabel }}</b>
+          <input type="range" min="0.2" max="6" step="0.1" value="{{ rainMm }}" onChange="{{ set_rainMm }}" style="width:100%;">
+        </label>
+        <div style="font-size:11px; color:var(--color-neutral-600); margin-top:4px; text-wrap:pretty;">เกณฑ์รายชั่วโมง ตาม Norde Santos et al. 2024 — ค่าตั้งต้น 1.0 มม./ชม.</div>
+      </div>
+
+      <div>
+        <div style="font-family:var(--font-heading); font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:var(--color-neutral-700); margin-bottom:8px;">ตัวเลขเศรษฐศาสตร์</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <label style="font-size:12px; color:var(--color-neutral-700);">ค่าไฟ (บาท/kWh)
+            <input class="input" type="number" step="0.1" value="{{ price }}" onChange="{{ set_price }}" style="width:100%; margin-top:4px;">
+          </label>
+          <label style="font-size:12px; color:var(--color-neutral-700);">ค่าล้าง (บาท/kWp)
+            <input class="input" type="number" step="0.5" value="{{ washCost }}" onChange="{{ set_washCost }}" style="width:100%; margin-top:4px;">
+          </label>
+        </div>
+        <label style="display:block; font-size:12px; color:var(--color-neutral-700); margin-top:12px;">ระยะพยากรณ์ <b style="color:var(--color-text);">{{ horizon }} วัน</b>
+          <input type="range" min="30" max="120" step="5" value="{{ horizon }}" onChange="{{ set_horizon }}" style="width:100%;">
+        </label>
+        <label style="display:block; font-size:12px; color:var(--color-neutral-700); margin-top:12px;">PM2.5 เฉลี่ย <b style="color:var(--color-text);">{{ pm }} µg/m³</b>
+          <input type="range" min="5" max="70" step="1" value="{{ pm }}" onChange="{{ set_pm }}" style="width:100%;">
+        </label>
+      </div>
+
+      <div style="margin-top:auto; font-size:11px; color:var(--color-neutral-600); text-wrap:pretty; border-top:1px solid var(--color-neutral-300); padding-top:10px;">
+        ค่าที่แสดงคำนวณในหน้านี้เพื่อดูพฤติกรรม UI — ตัวเลขจริงมาจาก pvlib (hsu + PVWatts) และ economics.py ผ่าน API
+      </div>
+    </aside>
+
+    <main style="padding:16px 20px; display:grid; grid-template-rows:auto auto 1fr; gap:14px; min-height:0;">
+
+      <section class="card blueprint" style="padding:14px 18px; display:grid; grid-template-columns:1fr auto; align-items:center; gap:24px;">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex; align-items:baseline; gap:18px; flex-wrap:wrap;">
+          <span class="card-kicker" style="letter-spacing:0.14em;">คำแนะนำ</span>
+          <span style="font-family:var(--font-heading); font-size:30px; font-weight:600; line-height:1;">{{ recText }}</span>
+          <span style="font-size:13px; color:var(--color-neutral-700);">ช่วงที่คุ้มพอกัน {{ bandText }} · ต้นทุนต่ำสุด {{ acrText }} บาท/วัน</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:22px;">
+          <div style="text-align:right;">
+            <div style="font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--color-neutral-700);">ประหยัดเทียบล้างทุกวัน</div>
+            <div style="font-family:var(--font-heading); font-size:22px; font-weight:600;">{{ savDaily }} <span style="font-size:12px; font-weight:400; color:var(--color-neutral-700);">บาท/วัน</span></div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--color-neutral-700);">ประหยัดเทียบไม่ล้างเลย</div>
+            <div style="font-family:var(--font-heading); font-size:22px; font-weight:600;">{{ savNever }} <span style="font-size:12px; font-weight:400; color:var(--color-neutral-700);">บาท/วัน</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card blueprint" style="padding:14px 18px 8px;">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px;">
+          <div>
+            <div class="card-kicker" style="letter-spacing:0.14em;">Soiling ratio</div>
+            <div style="font-family:var(--font-heading); font-size:19px; font-weight:600; white-space:nowrap;">ความสะอาดของแผง เทียบฝุ่นและฝน</div>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(4, auto); gap:26px; text-align:right; white-space:nowrap;">
+            <div>
+              <div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-neutral-700);">ความสะอาดวันนี้</div>
+              <div style="font-family:var(--font-heading); font-size:26px; font-weight:600; color:var(--color-accent-700);">{{ srToday }}</div>
+            </div>
+            <div>
+              <div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-neutral-700);">อัตราสกปรก/วัน</div>
+              <div style="font-family:var(--font-heading); font-size:26px; font-weight:600;">{{ rateText }}</div>
+            </div>
+            <div>
+              <div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-neutral-700);">วันตั้งแต่ล้างล่าสุด</div>
+              <div style="font-family:var(--font-heading); font-size:26px; font-weight:600;">{{ daysSince }}</div>
+            </div>
+            <div>
+              <div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--color-neutral-700);">ฝนล้างครั้งหน้า</div>
+              <div style="font-family:var(--font-heading); font-size:26px; font-weight:600;">{{ nextRain }}</div>
+            </div>
+          </div>
+        </div>
+        <div style="position:relative;">
+          <svg viewBox="0 0 1180 220" style="width:100%; height:220px; display:block;" onMouseMove="{{ onHoverSoil }}" onMouseLeave="{{ onLeaveSoil }}">
+            <g stroke="var(--color-neutral-300)" stroke-width="1">
+              <line x1="52" y1="20" x2="1160" y2="20"></line>
+              <line x1="52" y1="65" x2="1160" y2="65"></line>
+              <line x1="52" y1="110" x2="1160" y2="110"></line>
+              <line x1="52" y1="155" x2="1160" y2="155"></line>
+              <line x1="52" y1="182" x2="1160" y2="182"></line>
+            </g>
+            <g fill="var(--color-neutral-600)" font-size="11" font-family="var(--font-body)">
+              <text x="8" y="24">1.00</text>
+              <text x="8" y="69">0.96</text>
+              <text x="8" y="114">0.92</text>
+              <text x="8" y="159">0.88</text>
+            </g>
+            <sc-for list="{{ pmBars }}" as="b" hint-placeholder-count="30">
+              <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="var(--color-neutral-300)"></rect>
+            </sc-for>
+            <sc-for list="{{ rainMarks }}" as="r" hint-placeholder-count="2">
+              <line x1="{{ r.x }}" y1="20" x2="{{ r.x }}" y2="182" stroke="var(--color-accent-300)" stroke-width="1" stroke-dasharray="3 3"></line>
+            </sc-for>
+            <path d="{{ bandPath }}" fill="var(--color-accent-200)" opacity="0.55"></path>
+            <path d="{{ soilPath }}" fill="none" stroke="var(--color-accent)" stroke-width="2"></path>
+            <line x1="{{ todayX }}" y1="14" x2="{{ todayX }}" y2="188" stroke="var(--color-text)" stroke-width="1"></line>
+            <text x="{{ todayX }}" y="10" font-size="10" fill="var(--color-text)" text-anchor="middle" font-family="var(--font-body)">วันนี้</text>
+            <line x1="{{ recX }}" y1="14" x2="{{ recX }}" y2="188" stroke="var(--color-accent-700)" stroke-width="1.5"></line>
+            <circle cx="{{ recX }}" cy="{{ recY }}" r="4" fill="var(--color-accent-700)"></circle>
+            <text x="{{ recX }}" y="204" font-size="11" fill="var(--color-accent-700)" text-anchor="middle" font-family="var(--font-body)">วันที่ควรล้าง</text>
+            <sc-if value="{{ hoverSoil }}" hint-placeholder-val="{{ false }}">
+              <g>
+                <line x1="{{ hoverSoil.x }}" y1="14" x2="{{ hoverSoil.x }}" y2="188" stroke="var(--color-neutral-600)" stroke-width="1"></line>
+                <circle cx="{{ hoverSoil.x }}" cy="{{ hoverSoil.y }}" r="3.5" fill="var(--color-text)"></circle>
+              </g>
+            </sc-if>
+          </svg>
+          <sc-if value="{{ hoverSoil }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute; top:6px; left:{{ hoverSoil.cssLeft }}; transform:translateX(-50%); pointer-events:none; background:var(--color-bg); border:1px solid var(--color-neutral-400); padding:6px 9px; font-size:11px; line-height:1.5; white-space:nowrap;">
+              <b>{{ hoverSoil.date }}</b><br>ความสะอาด {{ hoverSoil.sr }}<br>PM2.5 {{ hoverSoil.pm }} µg/m³
+            </div>
+          </sc-if>
+        </div>
+      </section>
+
+      <section style="display:grid; grid-template-columns:1fr 1fr; gap:14px; min-height:0;">
+
+        <div class="card blueprint" style="padding:14px 18px; display:flex; flex-direction:column; min-height:0;">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="card-kicker" style="letter-spacing:0.14em;">ACR</div>
+          <div style="font-family:var(--font-heading); font-size:19px; font-weight:600; margin-bottom:2px;">ต้นทุนเทียบจำนวนวันหลังล้างแผง</div>
+          <div style="font-size:12px; color:var(--color-neutral-700);">ต่ำสุดที่ T = {{ optT }} วัน · {{ acrText }} บาท/วัน</div>
+          <svg viewBox="0 0 560 200" style="width:100%; flex:1; min-height:0; margin-top:6px;" onMouseMove="{{ onHoverAcr }}" onMouseLeave="{{ onLeaveAcr }}">
+            <g stroke="var(--color-neutral-300)" stroke-width="1">
+              <line x1="40" y1="24" x2="548" y2="24"></line>
+              <line x1="40" y1="76" x2="548" y2="76"></line>
+              <line x1="40" y1="128" x2="548" y2="128"></line>
+              <line x1="40" y1="170" x2="548" y2="170"></line>
+            </g>
+            <path d="{{ acrLossPath }}" fill="none" stroke="var(--color-neutral-500)" stroke-width="1.5" stroke-dasharray="4 3"></path>
+            <path d="{{ acrWashPath }}" fill="none" stroke="var(--color-neutral-400)" stroke-width="1.5" stroke-dasharray="2 3"></path>
+            <path d="{{ acrPath }}" fill="none" stroke="var(--color-accent)" stroke-width="2"></path>
+            <circle cx="{{ acrMinX }}" cy="{{ acrMinY }}" r="4.5" fill="var(--color-accent-700)"></circle>
+            <sc-if value="{{ hoverAcr }}" hint-placeholder-val="{{ false }}">
+              <g>
+                <line x1="{{ hoverAcr.x }}" y1="18" x2="{{ hoverAcr.x }}" y2="170" stroke="var(--color-neutral-600)" stroke-width="1"></line>
+                <text x="{{ hoverAcr.tx }}" y="16" font-size="11" fill="var(--color-text)" text-anchor="{{ hoverAcr.anchor }}" font-family="var(--font-body)">T={{ hoverAcr.t }} · {{ hoverAcr.acr }} บาท/วัน</text>
+              </g>
+            </sc-if>
+            <g fill="var(--color-neutral-600)" font-size="11" font-family="var(--font-body)">
+              <text x="40" y="188">1</text>
+              <text x="290" y="188">{{ midDayLabel }}</text>
+              <text x="524" y="188">{{ horizon }}</text>
+            </g>
+          </svg>
+          <div style="display:flex; gap:16px; font-size:11px; color:var(--color-neutral-700); margin-top:2px;">
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:14px; height:2px; background:var(--color-accent);"></span>ACR รวม</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:14px; height:0; border-top:2px dashed var(--color-neutral-500);"></span>ค่าไฟที่เสีย/วัน</span>
+            <span style="display:flex; align-items:center; gap:6px;"><span style="width:14px; height:0; border-top:2px dotted var(--color-neutral-400);"></span>ค่าล้างเฉลี่ย/วัน</span>
+          </div>
+        </div>
+
+        <div class="card blueprint" style="padding:14px 18px; display:flex; flex-direction:column; min-height:0;">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div style="display:flex; gap:6px; margin-bottom:10px;">
+            <button class="btn btn-ghost" style="{{ tabStyleA }}" onClick="{{ setTabA }}">พลังงาน 7 วัน</button>
+            <button class="btn btn-ghost" style="{{ tabStyleB }}" onClick="{{ setTabB }}">โปรไฟล์กำลังผลิต</button>
+            <button class="btn btn-ghost" style="{{ tabStyleC }}" onClick="{{ setTabC }}">เหตุการณ์ระบบ</button>
+          </div>
+
+          <sc-if value="{{ isTabA }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex; flex-direction:column; min-height:0; flex:1;">
+              <div style="font-size:12px; color:var(--color-neutral-700); margin-bottom:4px;">พลังงานที่คาดว่าจะผลิตได้ 7 วันข้างหน้า — แผงสะอาด เทียบกับสภาพจริง (kWh)</div>
+              <svg viewBox="0 0 560 190" style="width:100%; flex:1; min-height:0;">
+                <line x1="34" y1="160" x2="548" y2="160" stroke="var(--color-neutral-400)" stroke-width="1"></line>
+                <sc-for list="{{ weekBars }}" as="d" hint-placeholder-count="7">
+                  <g>
+                    <rect x="{{ d.x }}" y="{{ d.cleanY }}" width="{{ d.w }}" height="{{ d.cleanH }}" fill="none" stroke="var(--color-neutral-500)" stroke-width="1"></rect>
+                    <rect x="{{ d.x }}" y="{{ d.soilY }}" width="{{ d.w }}" height="{{ d.soilH }}" fill="var(--color-accent)"></rect>
+                    <text x="{{ d.cx }}" y="176" font-size="11" fill="var(--color-neutral-700)" text-anchor="middle" font-family="var(--font-body)">{{ d.label }}</text>
+                    <text x="{{ d.cx }}" y="{{ d.valY }}" font-size="11" fill="var(--color-text)" text-anchor="middle" font-family="var(--font-body)">{{ d.value }}</text>
+                  </g>
+                </sc-for>
+              </svg>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isTabB }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; min-height:0; flex:1;">
+              <div style="font-size:12px; color:var(--color-neutral-700); margin-bottom:4px;">กำลังผลิตวันนี้เทียบความเข้มแสง — สูงสุด {{ peakKw }} kW</div>
+              <svg viewBox="0 0 560 190" style="width:100%; flex:1; min-height:0;">
+                <line x1="34" y1="160" x2="548" y2="160" stroke="var(--color-neutral-400)" stroke-width="1"></line>
+                <path d="{{ ghiPath }}" fill="var(--color-neutral-200)" stroke="var(--color-neutral-400)" stroke-width="1"></path>
+                <path d="{{ powerPath }}" fill="none" stroke="var(--color-accent)" stroke-width="2"></path>
+                <g fill="var(--color-neutral-600)" font-size="11" font-family="var(--font-body)">
+                  <text x="34" y="176">06:00</text>
+                  <text x="270" y="176">12:00</text>
+                  <text x="516" y="176">18:00</text>
+                </g>
+              </svg>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ isTabC }}" hint-placeholder-val="{{ false }}">
+            <div style="overflow-y:auto; min-height:0; flex:1;">
+              <table class="table" style="width:100%; font-size:12px;">
+                <thead><tr><th style="text-align:left;">วันที่</th><th style="text-align:left;">เหตุการณ์</th><th style="text-align:left;">ผลต่อโมเดล</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ events }}" as="e" hint-placeholder-count="5">
+                    <tr>
+                      <td style="white-space:nowrap;">{{ e.date }}</td>
+                      <td>{{ e.title }}</td>
+                      <td style="color:var(--color-neutral-700);">{{ e.effect }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:940},&quot;siteName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;กรุงเทพมหานคร&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;projectionDays&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:60,&quot;min&quot;:30,&quot;max&quot;:120,&quot;unit&quot;:&quot;วัน&quot;,&quot;tsType&quot;:&quot;number&quot;},&quot;bandTolerance&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.05,&quot;min&quot;:0.01,&quot;max&quot;:0.15,&quot;step&quot;:0.01,&quot;tsType&quot;:&quot;number&quot;}}">
+const SITES = {
+  "กรุงเทพมหานคร": [13.7563, 100.5018, 32],
+  "เชียงใหม่": [18.7883, 98.9853, 41],
+  "นครราชสีมา": [14.9799, 102.0977, 27],
+  "ขอนแก่น": [16.4419, 102.8360, 29],
+  "สงขลา": [7.1897, 100.5954, 16],
+};
+const TH_MONTH = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const fmtDate = (d) => `${d.getDate()} ${TH_MONTH[d.getMonth()]}`;
+
+class Component extends DCLogic {
+  state = {
+    site: "กรุงเทพมหานคร", lat: 13.7563, lon: 100.5018,
+    kwp: 100, dcAc: 1.2, tilt: 15, azimuth: 180, sysEff: 88, gamma: 40,
+    rainMm: 1.0, price: 4.0, washCost: 15, horizon: 60, pm: 32,
+    daysSince: 12, tab: "A", hoverSoil: null, hoverAcr: null,
+  };
+
+  num(k, v) { const n = parseFloat(v); this.setState({ [k]: isNaN(n) ? 0 : n }); }
+
+  model() {
+    const s = this.state;
+    const horizon = Math.round(this.props.projectionDays ?? s.horizon);
+    // daily soiling loss, anchored to the repo's literature-calibrated ~0.17%/day at dry-season PM ~30
+    const rate = 0.0017 * (s.pm / 30) * (1 - (s.tilt / 90) * 0.55);
+    const yieldPerKwp = 4.35 * (s.sysEff / 100) * (1 - Math.abs(s.tilt - 15) * 0.004) * (1 - Math.abs(((s.azimuth - 180 + 540) % 360) - 180) / 180 * 0.28);
+    const gen = s.kwp * yieldPerKwp;
+    // rain resets: heavier rain threshold => fewer qualifying hours => longer dry stretch
+    const rainEvery = Math.round(18 + s.rainMm * 9);
+    const sr = [], pmSeries = [];
+    let acc = 0;
+    for (let t = 1; t <= horizon; t++) {
+      const isRain = t % rainEvery === 0;
+      acc = isRain ? 0 : acc + rate;
+      sr.push(Math.max(0.6, 1 - acc));
+      pmSeries.push(Math.max(4, s.pm * (0.75 + 0.5 * Math.abs(Math.sin(t * 1.7)))));
+    }
+    const acr = [], loss = [], wash = [];
+    let cum = 0;
+    for (let t = 1; t <= horizon; t++) {
+      cum += (1 - sr[t - 1]) * gen * s.price;
+      loss.push(cum / t);
+      wash.push((s.washCost * s.kwp) / t);
+      acr.push(cum / t + (s.washCost * s.kwp) / t);
+    }
+    const minT = Math.max(1, s.daysSince);
+    let optT = minT, best = Infinity;
+    for (let t = minT; t <= horizon; t++) if (acr[t - 1] < best) { best = acr[t - 1]; optT = t; }
+    const tol = this.props.bandTolerance ?? 0.05;
+    const thr = best * (1 + tol);
+    let lo = optT, hi = optT;
+    while (lo > 1 && acr[lo - 2] <= thr) lo--;
+    while (hi < horizon && acr[hi] <= thr) hi++;
+    const nextRainT = rainEvery * Math.ceil((s.daysSince + 1) / rainEvery);
+    return { horizon, rate, gen, sr, pmSeries, acr, loss, wash, optT, best, lo, hi, minT,
+      savDaily: acr[0] - best, savNever: acr[horizon - 1] - best, rainEvery,
+      nextRainT: nextRainT <= horizon ? nextRainT : null };
+  }
+
+  renderVals() {
+    const s = this.state, m = this.model();
+    const today = new Date(2026, 7, 15);
+    const dayDate = (t) => { const d = new Date(today); d.setDate(d.getDate() + (t - s.daysSince)); return d; };
+
+    const X0 = 52, X1 = 1160, W = X1 - X0;
+    const sx = (t) => X0 + (W * (t - 1)) / Math.max(1, m.horizon - 1);
+    const sy = (v) => 20 + (1 - v) / 0.16 * 162;
+    const soilPath = m.sr.map((v, i) => `${i ? "L" : "M"}${sx(i + 1).toFixed(1)},${Math.min(190, sy(v)).toFixed(1)}`).join(" ");
+    const bandPath = `M${sx(m.lo)},20 L${sx(m.hi)},20 L${sx(m.hi)},182 L${sx(m.lo)},182 Z`;
+    const bw = Math.max(1.5, W / m.horizon - 2);
+    const pmBars = m.pmSeries.map((p, i) => {
+      const h = Math.min(34, (p / 70) * 34);
+      return { x: (sx(i + 1) - bw / 2).toFixed(1), y: (182 - h).toFixed(1), w: bw.toFixed(1), h: h.toFixed(1) };
+    });
+    const rainMarks = [];
+    for (let t = m.rainEvery; t <= m.horizon; t += m.rainEvery) rainMarks.push({ x: sx(t).toFixed(1) });
+
+    const AX0 = 40, AX1 = 548, AW = AX1 - AX0;
+    const ax = (t) => AX0 + (AW * (t - 1)) / Math.max(1, m.horizon - 1);
+    const amax = Math.max(...m.acr.slice(0, m.horizon)) * 1.02, amin = Math.min(...m.acr) * 0.9;
+    const ay = (v) => 24 + (1 - (v - amin) / Math.max(1e-6, amax - amin)) * 146;
+    const p = (arr) => arr.map((v, i) => `${i ? "L" : "M"}${ax(i + 1).toFixed(1)},${Math.max(18, Math.min(172, ay(v))).toFixed(1)}`).join(" ");
+
+    const weekBars = [];
+    for (let i = 0; i < 7; i++) {
+      const t = s.daysSince + i + 1;
+      const srv = m.sr[Math.min(m.sr.length - 1, t - 1)];
+      const clean = m.gen, soiled = m.gen * srv;
+      const maxV = m.gen * 1.05;
+      const x = 40 + i * 72, w = 46;
+      const cleanH = (clean / maxV) * 120, soilH = (soiled / maxV) * 120;
+      weekBars.push({ x, w, cx: x + w / 2, cleanY: 160 - cleanH, cleanH: cleanH.toFixed(1),
+        soilY: 160 - soilH, soilH: soilH.toFixed(1), valY: 160 - cleanH - 6,
+        label: fmtDate(dayDate(t)), value: Math.round(soiled) });
+    }
+
+    const hours = [];
+    for (let h = 6; h <= 18; h += 0.5) hours.push(h);
+    const bell = (h) => Math.max(0, Math.sin(Math.PI * (h - 6) / 12)) ** 1.25;
+    const peak = m.gen / 4.35 * 0.78;
+    const px = (h) => 34 + ((h - 6) / 12) * 500;
+    const powerPath = hours.map((h, i) => `${i ? "L" : "M"}${px(h).toFixed(1)},${(160 - bell(h) * 120).toFixed(1)}`).join(" ");
+    const ghiPath = hours.map((h, i) => `${i ? "L" : "M"}${px(h).toFixed(1)},${(160 - bell(h) * 132).toFixed(1)}`).join(" ") + " L534,160 L34,160 Z";
+
+    const tabBase = "padding:6px 12px; font-size:12px; border:1px solid var(--color-neutral-400);";
+    const tabOn = tabBase + " background:var(--color-accent); color:#fff; border-color:var(--color-accent);";
+
+    const hs = s.hoverSoil, ha = s.hoverAcr;
+    const hoverSoil = hs === null ? false : (() => {
+      const t = Math.min(m.horizon, Math.max(1, hs));
+      return { x: sx(t).toFixed(1), y: Math.min(190, sy(m.sr[t - 1])).toFixed(1),
+        cssLeft: ((sx(t) / 1180) * 100).toFixed(2) + "%",
+        date: fmtDate(dayDate(t)), sr: m.sr[t - 1].toFixed(3), pm: Math.round(m.pmSeries[t - 1]) };
+    })();
+    const hoverAcr = ha === null ? false : (() => {
+      const t = Math.min(m.horizon, Math.max(1, ha));
+      return { x: ax(t).toFixed(1), t, acr: m.acr[t - 1].toFixed(1),
+        tx: Math.min(540, Math.max(46, ax(t))).toFixed(1), anchor: ax(t) > 430 ? "end" : "start" };
+    })();
+
+    const setters = {};
+    ["lat","lon","kwp","dcAc","tilt","azimuth","sysEff","gamma","rainMm","price","washCost","horizon","pm"]
+      .forEach(k => setters["set_" + k] = (e) => this.num(k, e.target.value));
+    setters.set_site = (e) => { const v = e.target.value, [la, lo, pm] = SITES[v]; this.setState({ site: v, lat: la, lon: lo, pm }); };
+
+    return {
+      ...setters,
+      site: s.site, lat: s.lat, lon: s.lon, kwp: s.kwp, dcAc: s.dcAc, tilt: s.tilt,
+      azimuth: s.azimuth, sysEff: s.sysEff, gamma: s.gamma, rainMm: s.rainMm,
+      price: s.price, washCost: s.washCost, horizon: m.horizon, pm: s.pm,
+      gammaLabel: `-0.${String(s.gamma).padStart(2, "0")}%/°C`,
+      rainLabel: `${s.rainMm.toFixed(1)} มม./ชม.`,
+      siteLabel: `${this.props.siteName ?? s.site} · ${s.lat.toFixed(4)}, ${s.lon.toFixed(4)} · ${s.kwp} kWp`,
+      dataThrough: fmtDate(today),
+      recText: m.optT <= m.minT ? "ควรล้างวันนี้" : `ควรล้างวันที่ ${fmtDate(dayDate(m.optT))}`,
+      bandText: `${fmtDate(dayDate(m.lo))} – ${fmtDate(dayDate(m.hi))}`,
+      acrText: m.best.toFixed(1),
+      savDaily: Math.round(m.savDaily).toLocaleString("en-US"),
+      savNever: Math.round(m.savNever).toLocaleString("en-US"),
+      srToday: m.sr[Math.max(0, s.daysSince - 1)].toFixed(3),
+      rateText: (m.rate * 100).toFixed(2) + "%",
+      daysSince: s.daysSince,
+      nextRain: m.nextRainT ? `อีก ${m.nextRainT - s.daysSince} วัน` : "ไม่พบในช่วงพยากรณ์",
+      optT: m.optT, midDayLabel: Math.round(m.horizon / 2),
+      soilPath, bandPath, pmBars, rainMarks,
+      todayX: sx(Math.max(1, s.daysSince)).toFixed(1),
+      recX: sx(m.optT).toFixed(1), recY: Math.min(190, sy(m.sr[m.optT - 1])).toFixed(1),
+      acrPath: p(m.acr), acrLossPath: p(m.loss), acrWashPath: p(m.wash),
+      acrMinX: ax(m.optT).toFixed(1), acrMinY: ay(m.best).toFixed(1),
+      weekBars, powerPath, ghiPath, peakKw: peak.toFixed(1),
+      hoverSoil, hoverAcr,
+      onHoverSoil: (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const vx = ((e.clientX - r.left) / r.width) * 1180;
+        this.setState({ hoverSoil: Math.round(1 + ((vx - X0) / W) * (m.horizon - 1)) });
+      },
+      onLeaveSoil: () => this.setState({ hoverSoil: null }),
+      onHoverAcr: (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const vx = ((e.clientX - r.left) / r.width) * 560;
+        this.setState({ hoverAcr: Math.round(1 + ((vx - AX0) / AW) * (m.horizon - 1)) });
+      },
+      onLeaveAcr: () => this.setState({ hoverAcr: null }),
+      isTabA: s.tab === "A", isTabB: s.tab === "B", isTabC: s.tab === "C",
+      tabStyleA: s.tab === "A" ? tabOn : tabBase,
+      tabStyleB: s.tab === "B" ? tabOn : tabBase,
+      tabStyleC: s.tab === "C" ? tabOn : tabBase,
+      setTabA: () => this.setState({ tab: "A" }),
+      setTabB: () => this.setState({ tab: "B" }),
+      setTabC: () => this.setState({ tab: "C" }),
+      events: [
+        { date: fmtDate(today), title: "ยืนยันฝนจาก TMD — ยกเลิกการรีเซตที่พยากรณ์ผิด", effect: "ขยับวันล้างล่าสุดกลับ 1 วัน" },
+        { date: fmtDate(new Date(2026, 7, 12)), title: "ฝน 15 มม. ใน 1 ชม. — รีเซตความสะอาดแผง", effect: "soiling ratio → 1.000" },
+        { date: fmtDate(new Date(2026, 7, 9)), title: "ปรับเทียบฝุ่น CAMS ด้วย Air4Thai รายเดือน", effect: "PM2.5 ปรับขึ้น 8%" },
+        { date: fmtDate(new Date(2026, 7, 5)), title: "เกินขอบพยากรณ์ AQ — เริ่มใช้ representative year", effect: "ข้อมูลหลังวันนี้เป็นค่าแทน" },
+        { date: fmtDate(new Date(2026, 6, 28)), title: "ล้างแผงตามคำแนะนำ", effect: "รีเซตรอบการคำนวณ" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
