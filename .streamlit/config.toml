@@ -1,0 +1,15 @@
+[theme]
+base = "light"
+primaryColor = "#a85f22"
+backgroundColor = "#eef0e8"
+secondaryBackgroundColor = "#f3f5ed"
+textColor = "#1b2118"
+font = "Sarabun:https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap"
+baseRadius = "medium"
+buttonRadius = "medium"
+borderColor = "#dbe0d2"
+showWidgetBorder = true
+metricValueFontWeight = 600
+
+[theme.sidebar]
+backgroundColor = "#ffffff"
