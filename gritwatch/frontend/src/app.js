@@ -1,12 +1,12 @@
 import { createApp, reactive, computed, onMounted } from "vue";
-import { api } from "./api.js?v=4";
-import { formatThaiDate } from "./format.js?v=4";
-import AppHeader from "./components/AppHeader.js?v=4";
-import Sidebar from "./components/Sidebar.js?v=4";
-import RecommendationStrip from "./components/RecommendationStrip.js?v=4";
-import SoilingChart from "./components/SoilingChart.js?v=4";
-import AcrChart from "./components/AcrChart.js?v=4";
-import TabPanel from "./components/TabPanel.js?v=4";
+import { api } from "./api.js?v=5";
+import { formatThaiDate } from "./format.js?v=5";
+import AppHeader from "./components/AppHeader.js?v=5";
+import Sidebar from "./components/Sidebar.js?v=5";
+import RecommendationStrip from "./components/RecommendationStrip.js?v=5";
+import SoilingChart from "./components/SoilingChart.js?v=5";
+import AcrChart from "./components/AcrChart.js?v=5";
+import TabPanel from "./components/TabPanel.js?v=5";
 
 const DEFAULT_SITE_ID = "bangkok";
 const COMPUTE_DEBOUNCE_MS = 600;
@@ -96,23 +96,23 @@ const App = {
     return { state, siteLabel, dataThrough, onSiteChanged, onFieldChanged };
   },
   template: `
-  <div style="height:940px; min-width:1280px; display:grid; grid-template-rows:auto 1fr; overflow:hidden;">
-    <AppHeader :site-label="siteLabel" :data-through="dataThrough" :computing="state.computing" />
+  <div style="min-height:100vh; min-width:1280px; display:grid; grid-template-rows:auto 1fr;">
+    <AppHeader :site-label="siteLabel" :data-through="dataThrough" :computing="state.computing" style="position:sticky; top:0; z-index:1;" />
 
     <div v-if="state.error" style="grid-column:1/-1; padding:10px 20px; background:var(--color-critical); color:#fff; font-size:13px;">
       {{ state.error }}
     </div>
 
-    <div v-if="state.loading" style="display:flex; align-items:center; justify-content:center; color:var(--color-neutral-600);">
+    <div v-if="state.loading" style="display:flex; align-items:center; justify-content:center; min-height:60vh; color:var(--color-neutral-600);">
       กำลังโหลดข้อมูล...
     </div>
 
-    <div v-else-if="state.config && state.payload" style="display:grid; grid-template-columns:312px 1fr; min-height:0;">
+    <div v-else-if="state.config && state.payload" style="display:grid; grid-template-columns:312px 1fr;">
       <Sidebar
         :sites="state.sites" :site-id="state.siteId" :config="state.config"
         @site-changed="onSiteChanged" @field-changed="onFieldChanged" />
 
-      <main style="padding:16px 20px; display:grid; grid-template-rows:auto auto 1fr; gap:14px; min-height:0;">
+      <main style="padding:16px 20px; display:grid; grid-template-rows:auto auto minmax(420px, auto); gap:14px;">
         <RecommendationStrip
           :recommendation="state.payload.recommendation"
           :days-until-natural-reset="state.payload.soiling.days_until_natural_reset" />
@@ -124,7 +124,7 @@ const App = {
           :daily-rate="state.payload.soiling.daily_rate"
           :days-until-natural-reset="state.payload.soiling.days_until_natural_reset" />
 
-        <section style="display:grid; grid-template-columns:1fr 1fr; gap:14px; min-height:0;">
+        <section style="display:grid; grid-template-columns:1fr 1fr; gap:14px; min-height:420px;">
           <AcrChart :curve="state.payload.acr.curve" :optimal-t="state.payload.recommendation.optimal_T" :acr-at-optimal="state.payload.recommendation.acr_at_optimal" />
           <TabPanel
             :daily-generation="state.payload.generation.daily"
