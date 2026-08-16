@@ -1,4 +1,4 @@
-import { formatThaiDate, formatInt, formatFixed } from "../format.js";
+import { formatThaiDate, formatInt, formatFixed } from "../format.js?v=4";
 
 export default {
   name: "RecommendationStrip",

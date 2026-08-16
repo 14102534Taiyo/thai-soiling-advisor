@@ -1,5 +1,5 @@
-import { buildAcrChart } from "../charts.js";
-import { formatFixed } from "../format.js";
+import { buildAcrChart } from "../charts.js?v=4";
+import { formatFixed } from "../format.js?v=4";
 
 export default {
   name: "AcrChart",

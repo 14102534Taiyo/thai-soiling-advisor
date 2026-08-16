@@ -1,12 +1,12 @@
 import { createApp, reactive, computed, onMounted } from "vue";
-import { api } from "./api.js";
-import { formatThaiDate } from "./format.js";
-import AppHeader from "./components/AppHeader.js";
-import Sidebar from "./components/Sidebar.js";
-import RecommendationStrip from "./components/RecommendationStrip.js";
-import SoilingChart from "./components/SoilingChart.js";
-import AcrChart from "./components/AcrChart.js";
-import TabPanel from "./components/TabPanel.js";
+import { api } from "./api.js?v=4";
+import { formatThaiDate } from "./format.js?v=4";
+import AppHeader from "./components/AppHeader.js?v=4";
+import Sidebar from "./components/Sidebar.js?v=4";
+import RecommendationStrip from "./components/RecommendationStrip.js?v=4";
+import SoilingChart from "./components/SoilingChart.js?v=4";
+import AcrChart from "./components/AcrChart.js?v=4";
+import TabPanel from "./components/TabPanel.js?v=4";
 
 const DEFAULT_SITE_ID = "bangkok";
 const COMPUTE_DEBOUNCE_MS = 600;

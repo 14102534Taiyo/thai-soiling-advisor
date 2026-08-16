@@ -7,6 +7,12 @@ function linePath(points) {
   return points.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
 }
 
+function percentile(values, p) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.round(p * (sorted.length - 1))));
+  return sorted[idx];
+}
+
 // --- Soiling hero chart: viewBox 0 0 1180 220, plot x 52..1160, y 20..182 ---
 const SOIL_X0 = 52, SOIL_X1 = 1160, SOIL_Y0 = 20, SOIL_Y1 = 182;
 
@@ -82,9 +88,20 @@ export function buildAcrChart(curve) {
     return { viewBox: "0 0 560 200", acrPath: "", lossPath: "", washPath: "", minX: 0, minY: 0, xLabels: [], hoverAt: () => null };
   }
   const ax = (i) => ACR_X0 + ((ACR_X1 - ACR_X0) * i) / Math.max(1, n - 1);
-  const acrValues = curve.map((p) => p.acr);
-  const amax = Math.max(...acrValues) * 1.02;
-  const amin = Math.min(...acrValues) * 0.9;
+  // Fit the y-domain to all three series, not just acr -- acr is
+  // loss_cost_per_day + clean_cost_per_day, and clean_cost_per_day is a
+  // cost-per-wash-amortized-over-T curve that's steep at low T (e.g. a
+  // cleaning cost of 1500 THB lands at 1500 THB/day when T=1, but ~10
+  // THB/day by T=150) -- an order of magnitude beyond the rest of the data.
+  // A domain that fits that spike squashes the interesting part (the U-shape
+  // minimum every other point clusters around) to a sliver. Cap the domain
+  // at the 90th percentile of all three series pooled together instead: the
+  // handful of most-extreme early-T points clip off the top of the plot
+  // (still real, just off-screen), and everything else -- including the
+  // actual minimum the recommendation is based on -- gets real resolution.
+  const allValues = curve.flatMap((p) => [p.acr, p.loss_cost_per_day, p.clean_cost_per_day]);
+  const amax = percentile(allValues, 0.9) * 1.08;
+  const amin = Math.min(...allValues, 0) * 0.98;
   const ay = (v) => ACR_Y0 + (1 - (v - amin) / Math.max(1e-6, amax - amin)) * (ACR_Y1 - ACR_Y0);
 
   const acrPath = linePath(curve.map((p, i) => [ax(i), Math.max(18, Math.min(172, ay(p.acr)))]));
