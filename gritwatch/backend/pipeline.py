@@ -13,6 +13,7 @@ src/representative_year.py, and does not modify any of them.
 Framework-agnostic on purpose -- no `streamlit` import here.
 """
 
+import functools
 import time
 from datetime import date, timedelta
 
@@ -68,7 +69,28 @@ def _concat_hourly(hist: pd.DataFrame, fcst: pd.DataFrame) -> pd.DataFrame:
     return combined[~combined.index.duplicated(keep="last")].sort_index()
 
 
+@functools.lru_cache(maxsize=64)
 def get_beyond_horizon_fill_params(lat: float, lon: float):
+    """Which past years' weather/PM to replay beyond the forecast horizon,
+    for this (lat, lon). Answer only changes once a year (year_end rolls
+    forward on Jan 1) and is identical for every visitor asking about the
+    same location -- cached in-process so it's derived once per site per
+    process lifetime rather than re-scanning 10 years of history on every
+    single POST /api/compute. Doesn't reintroduce shared *config* state
+    (nothing here depends on a visitor's kwp/tilt/price/etc.), just avoids
+    redoing the same read-only historical analysis repeatedly.
+
+    In-process (not disk) because Render's free-tier disk isn't reliably
+    reused between requests to this service -- confirmed live 2026-08-17,
+    back-to-back POST /api/compute calls for the same site both took ~65s
+    with no speedup, even though src/weather_client.py's own disk cache
+    should have made the second one fast if that cache were actually
+    persisting between requests there. A plain in-memory cache sidesteps
+    that uncertainty entirely: it only needs to survive within the same
+    running process, which it does by construction. Resets on redeploy or
+    when Render spins the service down after 15min idle -- same cold-start
+    cost as before on the very first request after that, fine since nothing
+    is lost, just recomputed once."""
     year_end = date.today().year - 1
     year_start = year_end - REPRESENTATIVE_YEAR_WINDOW + 1
     rain_stats = compute_monthly_rain_stats(lat, lon, year_start=year_start, year_end=year_end)
