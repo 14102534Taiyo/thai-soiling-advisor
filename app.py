@@ -35,7 +35,13 @@ from src.soiling_pv_model import (
     compute_expected_generation_hourly,
     compute_soiling_ratio,
 )
-from src.tmd_client import get_realtime_rain_today, get_rain_corrections_for_site, save_rain_correction
+from src.tmd_client import (
+    get_confirmed_clean_date,
+    get_rain_corrections_for_site,
+    get_realtime_rain_today,
+    save_confirmed_clean_date,
+    save_rain_correction,
+)
 from src.weather_client import (
     get_forecast_air_quality,
     get_forecast_weather,
@@ -339,7 +345,7 @@ def run_pipeline(lat, lon, kwp, dc_ac_ratio, tilt, azimuth, cleaning_threshold_m
 
     today_ts = pd.Timestamp(today)
     past_resets = soiling_ratio.index[(soiling_ratio.index <= today_ts) & (soiling_ratio >= RESET_RATIO_THRESHOLD)]
-    last_clean_date = past_resets.max() if len(past_resets) else soiling_ratio.index.min()
+    candidate_last_clean_date = past_resets.max() if len(past_resets) else soiling_ratio.index.min()
     assumed_reset = len(past_resets) == 0
     # "Today" always comes from the FORECAST branch (see fetch_pipeline_inputs:
     # hist_end = yesterday, forecast covers today onward), while everything
@@ -354,14 +360,36 @@ def run_pipeline(lat, lon, kwp, dc_ac_ratio, tilt, azimuth, cleaning_threshold_m
     # retracted. A reset dated yesterday is confirmed once rain_verified_
     # yesterday is True (TMD's fresh 07:00 report already checked it above);
     # anything older than that was already covered by a previous day's
-    # archive-rollover + TMD check. This matters because last_clean_date
-    # propagates into every downstream SR value until the next reset.
-    if last_clean_date == today_ts:
-        last_clean_date_unconfirmed = True
-    elif last_clean_date == today_ts - pd.Timedelta(days=1):
-        last_clean_date_unconfirmed = not rain_verified_yesterday
+    # archive-rollover + TMD check.
+    if candidate_last_clean_date == today_ts:
+        candidate_unconfirmed = True
+    elif candidate_last_clean_date == today_ts - pd.Timedelta(days=1):
+        candidate_unconfirmed = not rain_verified_yesterday
     else:
+        candidate_unconfirmed = False
+
+    # Once a reset is CONFIRMED (no longer provisional -- TMD's real station
+    # data has verified the rain behind it, not just a forecast), remember
+    # it permanently, using whatever cleaning_threshold_mm was set at
+    # confirmation time. Without this, last_clean_date is re-derived from
+    # scratch every run against whatever the sidebar slider currently says --
+    # so a user exploring "what if the real threshold is different" for
+    # FUTURE projections would silently rewrite an already-settled historical
+    # fact each time they moved the slider (a confirmed wash could stop
+    # counting, or an earlier one could newly appear). A confirmed date is a
+    # fact, not a hypothesis; only a NEWER confirmation should move it.
+    persisted_clean_date_str = get_confirmed_clean_date(lat, lon)
+    persisted_clean_date = pd.Timestamp(persisted_clean_date_str) if persisted_clean_date_str else None
+    if not candidate_unconfirmed and (persisted_clean_date is None or candidate_last_clean_date > persisted_clean_date):
+        save_confirmed_clean_date(lat, lon, candidate_last_clean_date.date().isoformat())
+        persisted_clean_date = candidate_last_clean_date
+
+    if persisted_clean_date is not None:
+        last_clean_date = persisted_clean_date
         last_clean_date_unconfirmed = False
+    else:
+        last_clean_date = candidate_last_clean_date
+        last_clean_date_unconfirmed = candidate_unconfirmed
 
     projection_index = soiling_ratio.index[soiling_ratio.index > last_clean_date]
     future_resets = projection_index[soiling_ratio.loc[projection_index] >= RESET_RATIO_THRESHOLD]

@@ -42,6 +42,19 @@ DEMO_UID = "api"
 DEMO_UKEY = "api12345"
 BASE_URL = "http://data.tmd.go.th/api"
 STATION_NETWORKS = ["Synop", "Agro", "Hydro"]
+# The three WeatherTodayBy{network} endpoints above (115 stations combined,
+# verified live 2026-08-16) are each restricted to ONE station type -- they
+# do NOT include every station TMD publishes. The general (un-suffixed)
+# WeatherToday v2 endpoint returns a broader 127-station set that includes
+# stations missing from all three networks above, e.g. CHIANG MAI (WMO
+# 48327) and DON MUANG AIRPORT (WMO 48456) -- found live when a Chiang Mai
+# rain-correction lookup silently fell back to a Lamphun station 0.23 deg
+# away because the real nearest station (Chiang Mai itself, ~0.02 deg away)
+# was never being fetched at all. Query this general endpoint too, in
+# addition to the three specialized ones -- get_realtime_rain_stations
+# already dedupes by station_id, so overlap between this and the networked
+# endpoints is harmless.
+GENERAL_WEATHER_TODAY_URL_PATH = "WeatherToday/v2/index.php"
 MAX_STATION_DISTANCE_DEG = 1.0  # ~110km at Thailand's latitude, matches air4thai_client's threshold
 
 
@@ -105,37 +118,94 @@ def get_rain_corrections_for_site(lat: float, lon: float) -> dict:
     return corrections.get(_site_key(lat, lon), {})
 
 
+CONFIRMED_CLEAN_LOG_PATH = os.path.join(CACHE_DIR, "confirmed_clean_dates.json")
+
+
+def _load_confirmed_clean_dates() -> dict:
+    if not os.path.exists(CONFIRMED_CLEAN_LOG_PATH):
+        return {}
+    with open(CONFIRMED_CLEAN_LOG_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_confirmed_clean_date(lat: float, lon: float, clean_date_str: str) -> None:
+    """Persist "the panel was cleaned on clean_date_str" as a settled fact
+    for this site, once that date is no longer provisional (see app.py's
+    last_clean_date_unconfirmed -- confirmed once TMD's real station data
+    has verified the rain that triggered it, not just a forecast).
+
+    Whatever cleaning_threshold_mm was in effect at confirmation time is
+    what decided this -- deliberately NOT re-derived from a later, different
+    threshold. A user exploring "what if the real threshold is higher/lower"
+    for FUTURE projections shouldn't retroactively rewrite an already
+    -confirmed historical event; only a genuinely newer confirmed reset
+    should move this forward (see app.py's ratchet logic around this)."""
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    confirmed = _load_confirmed_clean_dates()
+    confirmed[_site_key(lat, lon)] = clean_date_str
+    with open(CONFIRMED_CLEAN_LOG_PATH, "w", encoding="utf-8") as f:
+        json.dump(confirmed, f, indent=2)
+
+
+def get_confirmed_clean_date(lat: float, lon: float) -> str | None:
+    """The most recently CONFIRMED last-clean date persisted for this site,
+    or None if nothing has been confirmed yet (fresh site, or every reset
+    seen so far has still been provisional)."""
+    confirmed = _load_confirmed_clean_dates()
+    return confirmed.get(_site_key(lat, lon))
+
+
+def _parse_stations_xml(xml_text: str, network_label: str) -> list[dict]:
+    root = ET.fromstring(xml_text)
+    rows = []
+    for station in root.iter("Station"):
+        lat_el = station.find("Latitude")
+        lon_el = station.find("Longitude")
+        obs = station.find("Observation")
+        if lat_el is None or lon_el is None or obs is None:
+            continue
+        rain_el = obs.find("Rainfall")
+        rows.append({
+            "station_id": station.findtext("WmoStationNumber"),
+            "name_th": station.findtext("StationNameThai"),
+            "name_en": station.findtext("StationNameEnglish"),
+            "province": station.findtext("Province"),
+            "network": network_label,
+            "lat": float(lat_el.text),
+            "lon": float(lon_el.text),
+            "rainfall_mm_today": float(rain_el.text) if rain_el is not None and rain_el.text else None,
+            "observed_at": obs.findtext("DateTime"),
+        })
+    return rows
+
+
 def get_realtime_rain_stations() -> pd.DataFrame:
     """Today's rainfall-so-far (mm) at TMD stations nationwide, combining
-    the Synop/Agro/Hydro networks. Columns: station_id, name_en, network,
-    lat, lon, rainfall_mm_today, observed_at. Cache-busted hourly since
-    this is a same-day cumulative reading that updates through the day.
+    the general WeatherToday endpoint with the Synop/Agro/Hydro networks
+    (see GENERAL_WEATHER_TODAY_URL_PATH's comment for why both are needed).
+    Columns: station_id, name_th, name_en, province, network, lat, lon,
+    rainfall_mm_today, observed_at. Cache-busted hourly since this is a
+    same-day cumulative reading that updates through the day.
     """
     hour_bucket = datetime.now().strftime("%Y-%m-%d-%H")
+    params = {"uid": DEMO_UID, "ukey": DEMO_UKEY}
     rows = []
+
+    general_url = f"{BASE_URL}/{GENERAL_WEATHER_TODAY_URL_PATH}"
+    general_xml = _fetch_xml(general_url, params, cache_extra={"t": hour_bucket, "network": "General"})
+    rows.extend(_parse_stations_xml(general_xml, "General"))
+
     for network in STATION_NETWORKS:
         url = f"{BASE_URL}/WeatherTodayBy{network}/v1/index.php"
-        params = {"uid": DEMO_UID, "ukey": DEMO_UKEY}
         xml_text = _fetch_xml(url, params, cache_extra={"t": hour_bucket, "network": network})
-        root = ET.fromstring(xml_text)
-        for station in root.iter("Station"):
-            lat_el = station.find("Latitude")
-            lon_el = station.find("Longitude")
-            obs = station.find("Observation")
-            if lat_el is None or lon_el is None or obs is None:
-                continue
-            rain_el = obs.find("Rainfall")
-            rows.append({
-                "station_id": station.findtext("WmoStationNumber"),
-                "name_en": station.findtext("StationNameEnglish"),
-                "network": network,
-                "lat": float(lat_el.text),
-                "lon": float(lon_el.text),
-                "rainfall_mm_today": float(rain_el.text) if rain_el is not None and rain_el.text else None,
-                "observed_at": obs.findtext("DateTime"),
-            })
+        rows.extend(_parse_stations_xml(xml_text, network))
+
     if not rows:
-        return pd.DataFrame(columns=["station_id", "name_en", "network", "lat", "lon", "rainfall_mm_today", "observed_at"])
+        return pd.DataFrame(columns=["station_id", "name_th", "name_en", "province", "network", "lat", "lon", "rainfall_mm_today", "observed_at"])
+    # General endpoint listed first, so when a station appears in both (e.g.
+    # some Synop stations also show up in General), drop_duplicates' default
+    # keep="first" keeps a consistent single source per station rather than
+    # depending on dict/loop ordering.
     return pd.DataFrame(rows).drop_duplicates(subset=["station_id"]).reset_index(drop=True)
 
 
@@ -160,7 +230,12 @@ def get_realtime_rain_today(lat: float, lon: float) -> dict | None:
         return None
     return {
         "rainfall_mm_today": float(nearest["rainfall_mm_today"]),
-        "station_name": nearest["name_en"],
+        # Thai name first -- the whole dashboard's UI text is Thai, and an
+        # English station name embedded mid-sentence ("สถานี TMD จริง
+        # (BANGKOK METROPOLIS, ...)") read oddly. Fall back to the English
+        # name only if TMD's own StationNameThai field is missing.
+        "station_name": nearest["name_th"] or nearest["name_en"],
+        "province": nearest["province"],
         "distance_deg": float(nearest["distance_deg"]),
         "observed_at": nearest["observed_at"],
     }

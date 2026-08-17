@@ -1,5 +1,6 @@
 import hashlib
 import json
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -39,11 +40,23 @@ def _cache_path(endpoint: str, params: dict) -> Path:
     return CACHE_DIR / f"{endpoint_name}_{digest}.json"
 
 
-def _fetch_json(endpoint: str, params: dict) -> dict:
+def _fetch_json(endpoint: str, params: dict, daily_expiry: bool = False) -> dict:
+    """daily_expiry=True treats a cache file written on an earlier calendar
+    day as stale and refetches. Needed for the forecast endpoints: their
+    params (lat/lon/forecast_days) carry no date, so "16 days from now"
+    would otherwise hash to the same cache file forever, silently freezing
+    the first-ever fetch -- confirmed live 2026-08-16, a Bangkok forecast
+    cached 2026-08-08 was still being served 8 days later (today's PSH
+    6.2h from the stale forecast vs 3.88h from a real refetch -- nearly 2x
+    off). Historical endpoints don't need this: start_date/end_date are
+    already part of the cache key, so a stale file there just means
+    "already-settled data that hasn't changed," not a freshness bug."""
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cache_file = _cache_path(endpoint, params)
     if cache_file.exists():
-        return json.loads(cache_file.read_text(encoding="utf-8"))
+        is_stale = daily_expiry and date.fromtimestamp(cache_file.stat().st_mtime) < date.today()
+        if not is_stale:
+            return json.loads(cache_file.read_text(encoding="utf-8"))
 
     response = requests.get(endpoint, params=params, timeout=30)
     response.raise_for_status()
@@ -91,7 +104,7 @@ def get_forecast_weather(lat: float, lon: float, forecast_days: int = 16) -> pd.
         "hourly": ",".join(WEATHER_HOURLY_VARS),
         "timezone": "auto",
     }
-    payload = _fetch_json(FORECAST_WEATHER_URL, params)
+    payload = _fetch_json(FORECAST_WEATHER_URL, params, daily_expiry=True)
     return _hourly_to_dataframe(payload, WEATHER_COLUMN_RENAME)
 
 
@@ -116,7 +129,7 @@ def get_forecast_air_quality(lat: float, lon: float, forecast_days: int = 5) -> 
         "hourly": ",".join(AQ_HOURLY_VARS),
         "timezone": "auto",
     }
-    payload = _fetch_json(FORECAST_AQ_URL, params)
+    payload = _fetch_json(FORECAST_AQ_URL, params, daily_expiry=True)
     return _hourly_to_dataframe(payload, {v: v for v in AQ_HOURLY_VARS})
 
 
