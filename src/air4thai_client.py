@@ -41,6 +41,18 @@ warnings.filterwarnings("ignore", category=urllib3.exceptions.InsecureRequestWar
 
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
 
+# Air4Thai/PCD's CKAN endpoints are effectively unreachable from Render's
+# Oregon-based free-tier compute (confirmed live 2026-08-17 via per-stage
+# timing logs on the deployed gritwatch backend: both PM-correction call
+# sites hung for ~30s each -- exactly the old timeout value -- before
+# giving up, costing ~60s of every dashboard load for a source this
+# module's own callers already treat as optional and degrade gracefully
+# without). A real but slow-to-respond connection would rarely need more
+# than a few seconds for this small a JSON payload; 8s is enough headroom
+# for genuine latency while cutting the all-too-common total-timeout case
+# roughly 4x.
+REQUEST_TIMEOUT_S = 8
+
 REALTIME_URL = "https://air4thai.pcd.go.th/services/getNewAQI_JSON.php"
 CKAN_BASE = "https://pcd.gdcatalog.go.th/api/3/action"
 PM25_DATASET_ID = "12_02_aaq_pm2-5_bkk_metro"
@@ -66,7 +78,7 @@ def _fetch_json(endpoint: str, params: dict) -> dict:
     if cache_file.exists():
         return json.loads(cache_file.read_text(encoding="utf-8"))
 
-    response = requests.get(endpoint, params=params, timeout=30, verify=False)
+    response = requests.get(endpoint, params=params, timeout=REQUEST_TIMEOUT_S, verify=False)
     response.raise_for_status()
     payload = response.json()
     cache_file.write_text(json.dumps(payload), encoding="utf-8")
