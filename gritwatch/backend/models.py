@@ -116,6 +116,20 @@ class SystemEvent(BaseModel):
     effect: str
 
 
+class WeatherToday(BaseModel):
+    """Today's raw weather/air readings -- distinct from SoilingBlock's
+    soiling_ratio_today, which is the *derived* cleanliness state. This is
+    what fed into that derivation: how much it rained, how dusty the air
+    was, how sunny/warm/windy it was."""
+    rainfall_mm: float
+    max_hourly_rain_mm: float
+    pm2_5: float
+    pm10: float
+    temp_air_c: float
+    wind_speed_ms: float
+    ghi_avg_wm2: float
+
+
 class DashboardMeta(BaseModel):
     computed_at: datetime
     data_through: date
@@ -130,6 +144,7 @@ class AcrBlock(BaseModel):
 class DashboardPayload(BaseModel):
     config: SiteConfig
     meta: DashboardMeta
+    weather_today: WeatherToday
     soiling: SoilingBlock
     generation: GenerationBlock
     acr: AcrBlock

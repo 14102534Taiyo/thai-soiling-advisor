@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 
+import pandas as pd
+
 from gritwatch.backend.models import (
     AcrBlock,
     AcrPoint,
@@ -27,6 +29,7 @@ from gritwatch.backend.models import (
     SoilingBlock,
     SoilingDay,
     SystemEvent,
+    WeatherToday,
 )
 from gritwatch.backend.pipeline import RESET_RATIO_THRESHOLD, run_pipeline
 from gritwatch.backend.utils import to_date as _to_date
@@ -73,6 +76,28 @@ def _build_soiling_and_generation(pipeline_result: dict, config: SiteConfig):
         ))
 
     return soiling_days, generation_days
+
+
+def _build_weather_today(pipeline_result: dict, today: date) -> WeatherToday:
+    """Today's raw readings, as opposed to the derived soiling_ratio_today.
+    weather_daily/aq_daily are already resampled to daily means/sums inside
+    run_pipeline; rain_today/rain_today_max_hourly are already scalars
+    computed there too, reused here rather than re-deriving them."""
+    today_ts = pd.Timestamp(today)
+    weather_daily = pipeline_result["weather_daily"]
+    aq_daily = pipeline_result["aq_daily"]
+    weather_row = weather_daily.loc[today_ts] if today_ts in weather_daily.index else None
+    aq_row = aq_daily.loc[today_ts] if today_ts in aq_daily.index else None
+
+    return WeatherToday(
+        rainfall_mm=pipeline_result["rain_today"] or 0.0,
+        max_hourly_rain_mm=pipeline_result["rain_today_max_hourly"] or 0.0,
+        pm2_5=pipeline_result["pm25_today"] or 0.0,
+        pm10=float(aq_row["pm10"]) if aq_row is not None and pd.notna(aq_row["pm10"]) else 0.0,
+        temp_air_c=float(weather_row["temp_air"]) if weather_row is not None and pd.notna(weather_row["temp_air"]) else 0.0,
+        wind_speed_ms=float(weather_row["wind_speed"]) if weather_row is not None and pd.notna(weather_row["wind_speed"]) else 0.0,
+        ghi_avg_wm2=float(weather_row["ghi"]) if weather_row is not None and pd.notna(weather_row["ghi"]) else 0.0,
+    )
 
 
 def _build_generation_hourly(pipeline_result: dict, today: date) -> list[GenerationHour]:
@@ -171,6 +196,7 @@ def compute_dashboard(config: SiteConfig) -> DashboardPayload:
     )
 
     soiling_days, generation_days = _build_soiling_and_generation(pipeline_result, config)
+    weather_today = _build_weather_today(pipeline_result, today)
     hourly_today = _build_generation_hourly(pipeline_result, today)
     recommendation = _build_recommendation(pipeline_result, today)
     events = _build_events(pipeline_result, config, soiling_days)
@@ -194,6 +220,7 @@ def compute_dashboard(config: SiteConfig) -> DashboardPayload:
             weather_forecast_end=pipeline_result["weather_forecast_end"],
             aq_forecast_end=pipeline_result["aq_forecast_end"],
         ),
+        weather_today=weather_today,
         soiling=SoilingBlock(
             series=soiling_days,
             soiling_ratio_today=pipeline_result["soiling_today"] or 0.0,

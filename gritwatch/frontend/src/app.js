@@ -1,18 +1,19 @@
 import { createApp, reactive, computed, onMounted } from "vue";
-import { api } from "./api.js?v=5";
-import { formatThaiDate } from "./format.js?v=5";
-import AppHeader from "./components/AppHeader.js?v=5";
-import Sidebar from "./components/Sidebar.js?v=5";
-import RecommendationStrip from "./components/RecommendationStrip.js?v=5";
-import SoilingChart from "./components/SoilingChart.js?v=5";
-import AcrChart from "./components/AcrChart.js?v=5";
-import TabPanel from "./components/TabPanel.js?v=5";
+import { api } from "./api.js?v=6";
+import { formatThaiDate } from "./format.js?v=6";
+import AppHeader from "./components/AppHeader.js?v=6";
+import Sidebar from "./components/Sidebar.js?v=6";
+import RecommendationStrip from "./components/RecommendationStrip.js?v=6";
+import WeatherTodayCard from "./components/WeatherTodayCard.js?v=6";
+import SoilingChart from "./components/SoilingChart.js?v=6";
+import AcrChart from "./components/AcrChart.js?v=6";
+import TabPanel from "./components/TabPanel.js?v=6";
 
 const DEFAULT_SITE_ID = "bangkok";
 const COMPUTE_DEBOUNCE_MS = 600;
 
 const App = {
-  components: { AppHeader, Sidebar, RecommendationStrip, SoilingChart, AcrChart, TabPanel },
+  components: { AppHeader, Sidebar, RecommendationStrip, WeatherTodayCard, SoilingChart, AcrChart, TabPanel },
   setup() {
     // Everything here is local to this browser tab. config/payload are never
     // written anywhere shared -- switching sites or tweaking a slider only
@@ -112,10 +113,12 @@ const App = {
         :sites="state.sites" :site-id="state.siteId" :config="state.config"
         @site-changed="onSiteChanged" @field-changed="onFieldChanged" />
 
-      <main style="padding:16px 20px; display:grid; grid-template-rows:auto auto minmax(420px, auto); gap:14px;">
+      <main style="padding:16px 20px; display:grid; grid-template-rows:auto auto auto minmax(420px, auto); gap:14px;">
         <RecommendationStrip
           :recommendation="state.payload.recommendation"
           :days-until-natural-reset="state.payload.soiling.days_until_natural_reset" />
+
+        <WeatherTodayCard :weather="state.payload.weather_today" />
 
         <SoilingChart
           :series="state.payload.soiling.series" :recommendation="state.payload.recommendation"

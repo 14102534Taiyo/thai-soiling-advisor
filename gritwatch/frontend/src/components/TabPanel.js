@@ -1,5 +1,5 @@
-import { buildWeekBars, buildPowerProfile } from "../charts.js?v=5";
-import { formatThaiDate, formatThaiDateFull } from "../format.js?v=5";
+import { buildWeekBars, buildPowerProfile } from "../charts.js?v=6";
+import { formatThaiDate, formatThaiDateFull } from "../format.js?v=6";
 
 export default {
   name: "TabPanel",

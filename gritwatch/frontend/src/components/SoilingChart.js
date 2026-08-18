@@ -1,5 +1,5 @@
-import { buildSoilingChart } from "../charts.js?v=5";
-import { formatFixed } from "../format.js?v=5";
+import { buildSoilingChart } from "../charts.js?v=6";
+import { formatFixed } from "../format.js?v=6";
 
 export default {
   name: "SoilingChart",
