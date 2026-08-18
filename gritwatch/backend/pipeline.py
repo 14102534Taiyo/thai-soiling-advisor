@@ -14,9 +14,7 @@ Framework-agnostic on purpose -- no `streamlit` import here.
 """
 
 import functools
-import sys
 import time
-from contextlib import contextmanager
 from datetime import date, timedelta
 
 import pandas as pd
@@ -106,17 +104,14 @@ def fetch_pipeline_inputs(lat: float, lon: float, horizon_days: int):
     hist_start = (today - timedelta(days=HIST_DAYS)).isoformat()
     hist_end = (today - timedelta(days=1)).isoformat()
 
-    with _stage("get_historical_weather"):
-        hist_weather = get_historical_weather(lat, lon, hist_start, hist_end)
-    with _stage("get_forecast_weather"):
-        fcst_weather = get_forecast_weather(lat, lon, forecast_days=FORECAST_DAYS)
-    weather_hourly = _concat_hourly(hist_weather, fcst_weather)
-
-    with _stage("get_historical_air_quality"):
-        hist_aq = get_historical_air_quality(lat, lon, hist_start, hist_end)
-    with _stage("get_forecast_air_quality"):
-        fcst_aq = get_forecast_air_quality(lat, lon, forecast_days=AQ_FORECAST_DAYS)
-    aq_hourly = _concat_hourly(hist_aq, fcst_aq)
+    weather_hourly = _concat_hourly(
+        get_historical_weather(lat, lon, hist_start, hist_end),
+        get_forecast_weather(lat, lon, forecast_days=FORECAST_DAYS),
+    )
+    aq_hourly = _concat_hourly(
+        get_historical_air_quality(lat, lon, hist_start, hist_end),
+        get_forecast_air_quality(lat, lon, forecast_days=AQ_FORECAST_DAYS),
+    )
 
     horizon_end = today + timedelta(days=horizon_days)
     weather_forecast_end = weather_hourly.index.max().date()
@@ -182,20 +177,6 @@ def get_realtime_rain_status(lat: float, lon: float):
         return None
 
 
-@contextmanager
-def _stage(name: str):
-    """Temporary diagnostic timer -- prints elapsed seconds per pipeline
-    stage to stdout (captured in Render's logs) so the real bottleneck
-    behind GritWatch's ~60s Render compute time can be identified from
-    actual evidence instead of guessing. Remove once that's found; not
-    meant to be permanent instrumentation."""
-    start = time.monotonic()
-    try:
-        yield
-    finally:
-        print(f"[timing] {name}: {time.monotonic() - start:.2f}s", file=sys.stderr, flush=True)
-
-
 RATE_LIMIT_RETRY_DELAYS_S = (3, 8, 20)
 
 
@@ -208,14 +189,12 @@ def run_pipeline(*args, **kwargs):
     pipeline is a pure read (weather/AQ fetch -> soiling/economics compute),
     the one write (tmd_client's rain-correction log) is idempotent."""
     last_error = None
-    for attempt, delay in enumerate((*RATE_LIMIT_RETRY_DELAYS_S, None), start=1):
+    for delay in (*RATE_LIMIT_RETRY_DELAYS_S, None):
         try:
-            with _stage(f"run_pipeline total (attempt {attempt})"):
-                return _run_pipeline_once(*args, **kwargs)
+            return _run_pipeline_once(*args, **kwargs)
         except requests.exceptions.HTTPError as exc:
             if exc.response is None or exc.response.status_code != 429 or delay is None:
                 raise
-            print(f"[timing] attempt {attempt} hit 429 from {exc.response.url}, sleeping {delay}s", file=sys.stderr, flush=True)
             last_error = exc
             time.sleep(delay)
     raise last_error
@@ -225,21 +204,18 @@ def _run_pipeline_once(lat, lon, kwp, dc_ac_ratio, tilt, azimuth, cleaning_thres
                         price_per_kwh, cleaning_cost_per_kwp, horizon_days, system_efficiency=1.0,
                         gamma_pdc=-0.0040):
     today = date.today()
-    with _stage("fetch_pipeline_inputs"):
-        weather_hourly, aq_hourly, weather_fcst_end, aq_fcst_end, horizon_end = fetch_pipeline_inputs(
-            lat, lon, horizon_days
-        )
+    weather_hourly, aq_hourly, weather_fcst_end, aq_fcst_end, horizon_end = fetch_pipeline_inputs(
+        lat, lon, horizon_days
+    )
 
-    with _stage("get_pm_correction_factors"):
-        pm_correction = get_pm_correction_factors(lat, lon)
+    pm_correction = get_pm_correction_factors(lat, lon)
     if pm_correction is not None:
         month_factor = pd.Series(aq_hourly.index.month, index=aq_hourly.index).map(pm_correction).fillna(1.0)
         aq_hourly = aq_hourly.copy()
         aq_hourly["pm2_5"] = aq_hourly["pm2_5"] * month_factor
         aq_hourly["pm10"] = aq_hourly["pm10"] * month_factor
 
-    with _stage("get_realtime_pm_today"):
-        realtime_pm25_today = get_realtime_pm_today(lat, lon)
+    realtime_pm25_today = get_realtime_pm_today(lat, lon)
     if realtime_pm25_today is not None:
         today_mask = aq_hourly.index.date == today
         aq_hourly = aq_hourly.copy()
@@ -252,8 +228,7 @@ def _run_pipeline_once(lat, lon, kwp, dc_ac_ratio, tilt, azimuth, cleaning_thres
         weather_hourly.loc[weather_hourly.index.date == corrected_date, "rainfall_mm"] = corrected_mm
 
     yesterday = today - timedelta(days=1)
-    with _stage("get_realtime_rain_status"):
-        rain_status = get_realtime_rain_status(lat, lon)
+    rain_status = get_realtime_rain_status(lat, lon)
     rain_verified_yesterday = rain_status is not None or yesterday.isoformat() in persisted_corrections
     rain_correction_applied = False
     if rain_status is not None and yesterday.isoformat() not in persisted_corrections:
